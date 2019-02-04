@@ -107,8 +107,7 @@ hidden [String] $token = $null
 #  Vérifie si une adresse (compte ou alias) existe dans Zimbra
 #  Paramètres:
 #   - mail : Filtre sur le mail
-
-#  Retourne Tableau d'objet contenant les comptes
+#  Retourne le nobmre de comptes ou False
     [Boolean]testMailExist([String] $mail){
         # Requête SOAP d'Authentification
         $response = $this.getAccountsByMail($mail,@())
@@ -121,10 +120,33 @@ hidden [String] $token = $null
     }
 
 ###############################################################
+# Méthode getAccountsLocked()
+#  Recherche des comptes verouillés
+#  Paramètres:
+#   - attributs : Liste des attributs à extraire
+#  Retourne Tableau d'objet contenant les comptes
+    [Object]getAccountsLocked([String[]] $attributs){
+        # Construction Requête SOAP
+        $attribs = $attributs -join ","
+        $request = "<soapenv:Body><urn1:SearchAccountsRequest query=`"(zimbraAccountStatus=locked)`" attrs=`"$attribs`"/></soapenv:Body>"
+        $response = $this.request($request)
+
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            [int]$somme = $response.Envelope.Body.SearchAccountsResponse.searchTotal
+            $comptes = $response.Envelope.Body.SearchAccountsResponse.account
+            return $comptes
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
 # Méthode getAccountsByMail()
 #  Recherche les comptes à partir du mail
 #  Paramètres:
 #   - filtre : Filtre sur le mail
+#   - attributs : Liste des attributs à extraire
 #  Retourne Tableau d'objet contenant les comptes
     [Object]getAccountsByMail([String] $filtre,[String[]] $attributs){
         # Construction Requête SOAP
@@ -142,12 +164,12 @@ hidden [String] $token = $null
         }
     }
 
-
 ###############################################################
 # Méthode getAccountsByCompany()
 #  Recherche les comptes appartenant à une société
 #  Paramètres:
 #   - filtre : Filtre sur la société
+#   - attributs : Liste des attributs à extraire
 #  Retourne Tableau d'objet contenant les comptes
     [Object]getAccountsByCompany([String] $filtre,[String[]] $attributs){
         # Construction Requête SOAP
@@ -165,12 +187,12 @@ hidden [String] $token = $null
         }
     }
 
-
 ###############################################################
 # Méthode getAccountsByTitle()
 #  Recherche les comptes à partir de leur fonction
 #  Paramètres:
 #   - filtre : Filtre sur la fonction
+#   - attributs : Liste des attributs à extraire
 #  Retourne Tableau d'objet contenant les comptes
     [Object]getAccountsByTitle([String] $filtre,[String[]] $attributs){
         # Construction Requête SOAP

@@ -24,7 +24,7 @@ if(-not($zimbra.open("admin@zimbra.gosnet.fr","zimbra"))){
 $attributs = @("displayName","zimbraMailQuota","zimbraAccountStatus","zimbraMailAlias")
 $comptes = $zimbra.getAccountsByMail("stephane@zimbra.gosnet.fr",$attributs)
 foreach($compte in $comptes){
-    echo "-------------------------------"
+    echo "--------------- Comptes par mail ----------------"
     Write-host "Compte :"$compte.name
     foreach($attribut in $compte.a){
         if($attribut.n -eq "displayName"){ write-host "Nom = "$attribut.'#text'}
@@ -39,7 +39,7 @@ foreach($compte in $comptes){
 $attributs = @("displayName","company","title")
 $comptes = $zimbra.getAccountsByCompany("GOSNET",$attributs)
 foreach($compte in $comptes){
-    echo "-------------------------------"
+    echo "-------------- Comptes par Société -----------------"
     Write-host "Compte :"$compte.name
     foreach($attribut in $compte.a){
         if($attribut.n -eq "displayName"){ write-host "Nom = "$attribut.'#text'}
@@ -52,7 +52,7 @@ foreach($compte in $comptes){
 $attributs = @("displayName","company","title")
 $comptes = $zimbra.getAccountsByTitle("BOSS",$attributs)
 foreach($compte in $comptes){
-    echo "-------------------------------"
+    echo "------------- Comptes par fonction ------------------"
     Write-host "Compte :"$compte.name
     foreach($attribut in $compte.a){
         if($attribut.n -eq "displayName"){ write-host "Nom = "$attribut.'#text'}
@@ -62,8 +62,26 @@ foreach($compte in $comptes){
 }
 
 # Vérifie la présence du adresse
+    echo "------------ Verification adresse -------------------"
 if($zimbra.testMailExist("spam@zimbra.gosnet.fr")){Write-host "L'adresse existe"}else{Write-Host "L'adresse n'existe pas"}
+
+# Recherche des comptes verouillés
+$attributs = @("displayName","zimbraAccountStatus")
+$comptes = $zimbra.getAccountsLocked($attributs)
+foreach($compte in $comptes){
+    echo "---------- Comptes verouillés ---------------------"
+    Write-host "Compte :"$compte.name
+    foreach($attribut in $compte.a){
+        if($attribut.n -eq "displayName"){ write-host "Nom = "$attribut.'#text'}
+        if($attribut.n -eq "zimbraAccountStatus"){ write-host "Status = "$attribut.'#text'}
+    }
+}
 
 
 # Fermeture session
-$zimbra.close()
+echo "---------- Fermeture session ---------------------"
+if($zimbra.close()){
+    write-host "Session Zimbra Admin terminée"
+}else{
+    write-host "Erreur de fermeture de la session"
+}
