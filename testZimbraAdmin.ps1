@@ -1,11 +1,12 @@
 ﻿###############################################################
 ## PowerShell Zimbra Administration
-## Version 0.1 - 04/02/2019
+## Version 0.1 - 07/02/2019
 ##
 ##  Exemples d'utilisation de la classe ZimbraAdmin
 ##
 ## Développée et testée sous Zimbra 8.8
-## Nécessite PowerShell 6 (pour ignorer les erreurs de certificat)
+## Nécessite PowerShell 5
+## Nécessite PowerShell 6 pour ignorer les erreurs de certificat
 ##
 ## Auteur : Stéphane GOSNET
 ###############################################################
@@ -21,60 +22,40 @@ if(-not($zimbra.open("admin@zimbra.gosnet.fr","zimbra"))){
 
 
 # Recherche comptes par mail
-$attributs = @("displayName","zimbraMailQuota","zimbraAccountStatus","zimbraMailAlias")
-$comptes = $zimbra.getAccountsByMail("stephane@zimbra.gosnet.fr",$attributs)
+write-host "------------- Comptes par mail"
+$attributs = @("displayName","name","zimbraMailQuota","zimbraAccountStatus","zimbraMailAlias")
+$comptes = $zimbra.getAccountsByMail("*@zimbra.gosnet.fr",$attributs)
 foreach($compte in $comptes){
-    echo "--------------- Comptes par mail ----------------"
-    Write-host "Compte :"$compte.name
-    foreach($attribut in $compte.a){
-        if($attribut.n -eq "displayName"){ write-host "Nom = "$attribut.'#text'}
-        if($attribut.n -eq "zimbraMailDeliveryAddress"){ write-host "Addresse principale = "$attribut.'#text'}
-        if($attribut.n -eq "zimbraMailAlias"){ write-host "Alias = "$attribut.'#text'}
-        if($attribut.n -eq "zimbraMailQuota"){ write-host "Quota = "$attribut.'#text'}
-        if($attribut.n -eq "zimbraAccountStatus"){ write-host "Status = "$attribut.'#text'}
-    }
+    write-host ($compte)
 }
 
+
 # Recherche comptes par Société
+write-host "------------- Comptes par société"
 $attributs = @("displayName","company","title")
 $comptes = $zimbra.getAccountsByCompany("GOSNET",$attributs)
 foreach($compte in $comptes){
-    echo "-------------- Comptes par Société -----------------"
-    Write-host "Compte :"$compte.name
-    foreach($attribut in $compte.a){
-        if($attribut.n -eq "displayName"){ write-host "Nom = "$attribut.'#text'}
-        if($attribut.n -eq "company"){ write-host "Société = "$attribut.'#text'}
-        if($attribut.n -eq "title"){ write-host "Fonction = "$attribut.'#text'}
-    }
+    write-host ($compte)
 }
 
 # Recherche comptes par fonction
+write-host "------------- Comptes par fonction"
 $attributs = @("displayName","company","title")
 $comptes = $zimbra.getAccountsByTitle("BOSS",$attributs)
 foreach($compte in $comptes){
-    echo "------------- Comptes par fonction ------------------"
-    Write-host "Compte :"$compte.name
-    foreach($attribut in $compte.a){
-        if($attribut.n -eq "displayName"){ write-host "Nom = "$attribut.'#text'}
-        if($attribut.n -eq "company"){ write-host "Société = "$attribut.'#text'}
-        if($attribut.n -eq "title"){ write-host "Fonction = "$attribut.'#text'}
-    }
+    write-host ($compte)
 }
 
 # Vérifie la présence du adresse
-    echo "------------ Verification adresse -------------------"
+write-host "------------- Test adresse"
 if($zimbra.testMailExist("spam@zimbra.gosnet.fr")){Write-host "L'adresse existe"}else{Write-Host "L'adresse n'existe pas"}
 
 # Recherche des comptes verouillés
+write-host "------------- Comptes verouillés"
 $attributs = @("displayName","zimbraAccountStatus")
 $comptes = $zimbra.getAccountsLocked($attributs)
 foreach($compte in $comptes){
-    echo "---------- Comptes verouillés ---------------------"
-    Write-host "Compte :"$compte.name
-    foreach($attribut in $compte.a){
-        if($attribut.n -eq "displayName"){ write-host "Nom = "$attribut.'#text'}
-        if($attribut.n -eq "zimbraAccountStatus"){ write-host "Status = "$attribut.'#text'}
-    }
+    write-host ($compte)
 }
 
 

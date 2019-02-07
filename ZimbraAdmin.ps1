@@ -1,12 +1,13 @@
 ﻿###############################################################
 ## PowerShell Zimbra Administration
-## Version 0.1 - 04/02/2019
+## Version 0.1 - 07/02/2019
 ##
 ## Classe ZimbraAdmin permettant des appels SOAP aux API
 ## d'administration de Zimbra.
 ##
 ## Développée et testée sous Zimbra 8.8
-## Nécessite PowerShell 6 (pour ignorer les erreurs de certificat)
+## PowerShell 5 
+## Nécessite PowerShell 6 pour ignorer les erreurs de certificat
 ##
 ## Auteur : Stéphane GOSNET
 ##
@@ -15,6 +16,10 @@
 ###############################################################
 ## URL des WSDL Zimbra Admin
 ## https://zimbra-serveur:7071/service/wsdl/ZimbraAdminService.wsdl
+
+###############################################################
+## Problèmes à résoudre :
+##  - Encodage des accents dans les réponses XML
 
 ###############################################################
 # Constructeur class
@@ -64,6 +69,51 @@ hidden [String] $token = $null
             $response = "<response>Error</response>"
         }
         return [xml]$response
+    }
+
+###############################################################
+# Méthode xmlToObjects()
+#  Convertit une réponse XML/SOAP en tableau d'objets PowerShell
+#  Paramètre :
+#   - xml : réponse SOAP au format XML
+#   - attributs : tableau des attributs SOAP à insérer dans l'objet 
+#  Retourne un Object PowerShell
+    hidden [Object] xmlToObjects([Object]$xml,[String[]]$attributs){
+        
+        $objets = @()
+        # Parcours chaque résultat de la requete SOAP
+        foreach($result in $xml){
+            $objet = New-Object PsObject
+            $objet | Add-member -Name "name" -MemberType NoteProperty -Value ($result.name)
+            $attrCnt=@{}
+            # Comptage pour chaque attributs
+            foreach($ligne in $result.a){
+                foreach($attribut in $attributs){
+                    if($ligne.n -eq $attribut){
+                        $attrCnt[$attribut] += 1
+                    }
+                }
+            }
+            # Traitement des attributs
+            $attrMulti=@{}
+            foreach($ligne in $result.a){
+                foreach($attribut in $attributs){
+                    if($ligne.n -eq $attribut){
+                        if($attrCnt[$attribut] -eq 1){
+                            $objet | Add-member -Name $attribut -MemberType NoteProperty -Value ($ligne.'#text')
+                        }else{
+                            $attrMulti[$attribut] += 1
+                            if($attrMulti[$attribut] -eq 1){
+                                $objet | Add-member -Name $attribut -MemberType NoteProperty -Value @()
+                            }
+                            $objet.($attribut) += ($ligne.'#text')
+                        }
+                    }
+                }
+            }
+            $objets += $objet
+        }
+        return $objets
     }
 
 ###############################################################
@@ -135,7 +185,7 @@ hidden [String] $token = $null
         if(($response.response) -ne "Error"){
             [int]$somme = $response.Envelope.Body.SearchAccountsResponse.searchTotal
             $comptes = $response.Envelope.Body.SearchAccountsResponse.account
-            return $comptes
+            return $this.xmlToObjects($comptes,$attributs)
         }else{
             return $False
         }
@@ -158,7 +208,7 @@ hidden [String] $token = $null
         if(($response.response) -ne "Error"){
             [int]$somme = $response.Envelope.Body.SearchAccountsResponse.searchTotal
             $comptes = $response.Envelope.Body.SearchAccountsResponse.account
-            return $comptes
+            return $this.xmlToObjects($comptes,$attributs)
         }else{
             return $False
         }
@@ -181,7 +231,7 @@ hidden [String] $token = $null
         if(($response.response) -ne "Error"){
             [int]$somme = $response.Envelope.Body.SearchAccountsResponse.searchTotal
             $comptes = $response.Envelope.Body.SearchAccountsResponse.account
-            return $comptes
+            return $this.xmlToObjects($comptes,$attributs)
         }else{
             return $False
         }
@@ -204,7 +254,7 @@ hidden [String] $token = $null
         if(($response.response) -ne "Error"){
             [int]$somme = $response.Envelope.Body.SearchAccountsResponse.searchTotal
             $comptes = $response.Envelope.Body.SearchAccountsResponse.account
-            return $comptes
+            return $this.xmlToObjects($comptes,$attributs)
         }else{
             return $False
         }
