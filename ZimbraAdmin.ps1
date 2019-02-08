@@ -1,6 +1,6 @@
 ﻿###############################################################
 ## PowerShell Zimbra Administration
-## Version 0.1 - 07/02/2019
+## Version 0.1 - 08/02/2019
 ##
 ## Classe ZimbraAdmin permettant des appels SOAP aux API
 ## d'administration de Zimbra.

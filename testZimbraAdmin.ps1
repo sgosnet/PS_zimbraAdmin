@@ -1,6 +1,6 @@
 ﻿###############################################################
 ## PowerShell Zimbra Administration
-## Version 0.1 - 07/02/2019
+## Version 0.1 - 08/02/2019
 ##
 ##  Exemples d'utilisation de la classe ZimbraAdmin
 ##
