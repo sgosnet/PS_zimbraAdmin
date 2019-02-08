@@ -58,6 +58,27 @@ foreach($compte in $comptes){
     write-host ($compte)
 }
 
+# Creation de compte
+write-host "------------- Creation compte"
+$attributs = @{"zimbraMailQuota"=2147483648;"zimbraHideInGal"="TRUE"}
+$attributs += @{"company"="GOSNET"}
+$attributs += @{"title"="TEST"}
+$id = $zimbra.addAccount("test@zimbra.gosnet.fr","ZIMBRA Test","ZIMBRA","Test",$attributs)
+if($id){
+    write-host "Compte $id créé ! "
+}else{
+    write-host "Compte NON créé !"
+}
+
+# Ajut d'alias
+write-host "------------- Ajout Alias"
+$result = $zimbra.addAccountAlias($id,"test3@zimbra.gosnet.fr")
+if($result){
+    write-host "Alias créé ! "
+}else{
+    write-host "Alias NON créé !"
+}
+
 
 # Fermeture session
 echo "---------- Fermeture session ---------------------"

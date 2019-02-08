@@ -85,6 +85,7 @@ hidden [String] $token = $null
         foreach($result in $xml){
             $objet = New-Object PsObject
             $objet | Add-member -Name "name" -MemberType NoteProperty -Value ($result.name)
+            $objet | Add-member -Name "id" -MemberType NoteProperty -Value ($result.id)
             $attrCnt=@{}
             # Comptage pour chaque attributs
             foreach($ligne in $result.a){
@@ -168,6 +169,12 @@ hidden [String] $token = $null
             return $False
         }
     }
+
+###############################################################
+###############################################################
+# Méthodes liées aux comptes
+###############################################################
+###############################################################
 
 ###############################################################
 # Méthode getAccountsLocked()
@@ -259,6 +266,63 @@ hidden [String] $token = $null
             return $False
         }
     }
+
+###############################################################
+# Méthode addAccount()
+#  Creation de compte
+#  Paramètres:
+#   - name : compte à créer
+#   - displayName : Nom affiché compte à créer
+#   - sn : Nom du compte à créer
+#   - givenName : Prénom du compte à créer
+#   - attributs : Tableau associatif des attributs du compte
+#  Retourne l'Id du compte ou False si échec
+    [Object]addAccount([String]$name, [String]$displayName, [String]$sn, [String]$givenName, $attributs){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:CreateAccountRequest name=`"$name`">"
+        $request += "<urn1:a n=`"displayName`">$displayName</urn1:a>"
+        $request += "<urn1:a n=`"sn`">$sn</urn1:a>"
+        $request += "<urn1:a n=`"givenName`">$givenName</urn1:a>"  
+        foreach($key in $attributs.keys){
+            $request += "<urn1:a n=`"$key`">"+$attributs[$key]+"</urn1:a>"  
+        }
+        $request += "</urn1:CreateAccountRequest></soapenv:Body>"
+
+        $response = $this.request($request)
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            if($response.Envelope.Body.CreateAccountResponse.account.id){
+                return $response.Envelope.Body.CreateAccountResponse.account.id
+            }else{
+                return $False
+            }
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode addAccountAlias()
+#  Ajoute un alais à un compte
+#  Paramètres:
+#   - id : Id du compte
+#   - alais : Alias du compte à créer
+#  Retourne True ou False si échec
+    [Object]addAccountAlias([String]$id, [String]$alias){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:AddAccountAliasRequest id=`"$id`" alias=`"$alias`"/></soapenv:Body>"        $response = $this.request($request)
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            if($response.Envelope.Body.AddAccountAliasResponse.xmlns){
+                return $true
+            }else{
+                return $False
+            }
+        }else{
+            return $False
+        }
+    }
+
 
 ###############################################################
 ###############################################################
