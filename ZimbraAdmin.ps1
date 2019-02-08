@@ -310,7 +310,8 @@ hidden [String] $token = $null
 #  Retourne True ou False si échec
     [Object]addAccountAlias([String]$id, [String]$alias){
         # Construction Requête SOAP
-        $request = "<soapenv:Body><urn1:AddAccountAliasRequest id=`"$id`" alias=`"$alias`"/></soapenv:Body>"        $response = $this.request($request)
+        $request = "<soapenv:Body><urn1:AddAccountAliasRequest id=`"$id`" alias=`"$alias`"/></soapenv:Body>"
+        $response = $this.request($request)
         # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
         if(($response.response) -ne "Error"){
             if($response.Envelope.Body.AddAccountAliasResponse.xmlns){
