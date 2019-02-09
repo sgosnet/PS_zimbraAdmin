@@ -60,10 +60,10 @@ foreach($compte in $comptes){
 
 # Creation de compte
 write-host "------------- Creation compte"
-$attributs = @{"zimbraMailQuota"=2147483648;"zimbraHideInGal"="TRUE"}
+$attributs = @{"zimbraMailQuota"=2147483648}
 $attributs += @{"company"="GOSNET"}
 $attributs += @{"title"="TEST"}
-$id = $zimbra.addAccount("test@zimbra.gosnet.fr","ZIMBRA Test","ZIMBRA","Test",$attributs)
+$id = $zimbra.addAccount("thierry@zimbra.gosnet.fr","GOSNET Thierry","GOSNET","Thierry",$attributs)
 if($id){
     write-host "Compte $id créé ! "
 }else{
@@ -72,11 +72,18 @@ if($id){
 
 # Ajut d'alias
 write-host "------------- Ajout Alias"
-$result = $zimbra.addAccountAlias($id,"test3@zimbra.gosnet.fr")
+$result = $zimbra.addAccountAlias($id,"th@zimbra.gosnet.fr")
 if($result){
     write-host "Alias créé ! "
 }else{
     write-host "Alias NON créé !"
+}
+
+# Recherche comptes dans lRecherche dans GAL"
+$attributs = @("fullname","email")
+$comptes = $zimbra.getAccountsInGal("gosnet","zimbra.gosnet.fr",$attributs)
+foreach($compte in $comptes){
+    write-host ($compte)
 }
 
 

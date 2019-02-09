@@ -72,13 +72,13 @@ hidden [String] $token = $null
     }
 
 ###############################################################
-# Méthode xmlToObjects()
+# Méthode xmlOldToObjects()
 #  Convertit une réponse XML/SOAP en tableau d'objets PowerShell
 #  Paramètre :
 #   - xml : réponse SOAP au format XML
 #   - attributs : tableau des attributs SOAP à insérer dans l'objet 
 #  Retourne un Object PowerShell
-    hidden [Object] xmlToObjects([Object]$xml,[String[]]$attributs){
+    hidden [Object] xmlToOldObjects([Object]$xml,[String[]]$attributs){
         
         $objets = @()
         # Parcours chaque résultat de la requete SOAP
@@ -86,6 +86,53 @@ hidden [String] $token = $null
             $objet = New-Object PsObject
             $objet | Add-member -Name "name" -MemberType NoteProperty -Value ($result.name)
             $objet | Add-member -Name "id" -MemberType NoteProperty -Value ($result.id)
+            $attrCnt=@{}
+            # Comptage pour chaque attributs
+            foreach($ligne in $result.a){
+                foreach($attribut in $attributs){
+                    if($ligne.n -eq $attribut){
+                        $attrCnt[$attribut] += 1
+                    }
+                }
+            }
+            # Traitement des attributs
+            $attrMulti=@{}
+            foreach($ligne in $result.a){
+                foreach($attribut in $attributs){
+                    if($ligne.n -eq $attribut){
+                        if($attrCnt[$attribut] -eq 1){
+                            $objet | Add-member -Name $attribut -MemberType NoteProperty -Value ($ligne.'#text')
+                        }else{
+                            $attrMulti[$attribut] += 1
+                            if($attrMulti[$attribut] -eq 1){
+                                $objet | Add-member -Name $attribut -MemberType NoteProperty -Value @()
+                            }
+                            $objet.($attribut) += ($ligne.'#text')
+                        }
+                    }
+                }
+            }
+            $objets += $objet
+        }
+        return $objets
+    }
+
+###############################################################
+# Méthode xmlToObjects()
+#  Convertit une réponse XML/SOAP De la GAL en tableau d'objets PowerShell
+#  Paramètre :
+#   - xml : réponse SOAP au format XML
+#   - attributs : tableau des attributs SOAP à insérer dans l'objet 
+#  Retourne un Object PowerShell
+    hidden [Object] xmlToObjects([Object]$xml,[String[]]$properties,[String[]]$attributs){
+        
+        $objets = @()
+        # Parcours chaque résultat de la requete SOAP
+        foreach($result in $xml){
+            $objet = New-Object PsObject
+            foreach($propertie in $properties){
+                $objet | Add-member -Name "$propertie" -MemberType NoteProperty -Value ($result.($propertie))
+            }
             $attrCnt=@{}
             # Comptage pour chaque attributs
             foreach($ligne in $result.a){
@@ -190,9 +237,8 @@ hidden [String] $token = $null
 
         # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
         if(($response.response) -ne "Error"){
-            [int]$somme = $response.Envelope.Body.SearchAccountsResponse.searchTotal
             $comptes = $response.Envelope.Body.SearchAccountsResponse.account
-            return $this.xmlToObjects($comptes,$attributs)
+            return $this.xmlToObjects($comptes,("name","id"),$attributs)
         }else{
             return $False
         }
@@ -213,9 +259,8 @@ hidden [String] $token = $null
 
         # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
         if(($response.response) -ne "Error"){
-            [int]$somme = $response.Envelope.Body.SearchAccountsResponse.searchTotal
             $comptes = $response.Envelope.Body.SearchAccountsResponse.account
-            return $this.xmlToObjects($comptes,$attributs)
+            return $this.xmlToObjects($comptes,("name","id"),$attributs)
         }else{
             return $False
         }
@@ -236,9 +281,8 @@ hidden [String] $token = $null
 
         # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
         if(($response.response) -ne "Error"){
-            [int]$somme = $response.Envelope.Body.SearchAccountsResponse.searchTotal
             $comptes = $response.Envelope.Body.SearchAccountsResponse.account
-            return $this.xmlToObjects($comptes,$attributs)
+            return $this.xmlToObjects($comptes,("name","id"),$attributs)
         }else{
             return $False
         }
@@ -259,9 +303,28 @@ hidden [String] $token = $null
 
         # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
         if(($response.response) -ne "Error"){
-            [int]$somme = $response.Envelope.Body.SearchAccountsResponse.searchTotal
             $comptes = $response.Envelope.Body.SearchAccountsResponse.account
-            return $this.xmlToObjects($comptes,$attributs)
+            return $this.xmlToObjects($comptes,("name","id"),$attributs)
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode getAccountsInGal()
+#  Recherche les comptes à partir de leur fonction
+#  Paramètres:
+#   - name : Filtre de recherche
+#   - domaine : domaine de recherche
+#  Retourne Tableau d'objet contenant les comptes
+    [Object]getAccountsInGal([String] $name,[String] $domain,[String[]]$attributs){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:AutoCompleteGalRequest domain=`"$domain`" name=`"$name`"/></soapenv:Body>"        $response = $this.request($request)
+
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            $comptes = $response.Envelope.Body.AutoCompleteGalResponse.cn
+            return $this.xmlToObjects($comptes,("ref","id"),$attributs)
         }else{
             return $False
         }
