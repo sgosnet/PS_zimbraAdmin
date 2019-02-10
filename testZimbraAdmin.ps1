@@ -1,6 +1,6 @@
 ﻿###############################################################
 ## PowerShell Zimbra Administration
-## Version 0.1 - 08/02/2019
+## Version 0.1 - 10/02/2019
 ##
 ##  Exemples d'utilisation de la classe ZimbraAdmin
 ##
@@ -20,6 +20,17 @@ if(-not($zimbra.open("admin@zimbra.gosnet.fr","zimbra"))){
     Write-host "Erreur d'authentification !!"
 }
 
+# Etat de santé de Zimbra
+write-host "------------- Etat de santé"
+if($zimbra.checkHealth()){Write-host "Tout est OK"}else{Write-Host "Outch !"}
+
+# Recherche du nombre de comptes par COS
+write-host "------------- Comptes par COS"
+$cos = $zimbra.countAccountsByCos("zimbra.gosnet.fr")
+$cos
+$total = 0
+$cos.keys | Foreach-object{$total += $cos.($_)}
+write-host "Nombre de comptes total : $total"
 
 # Recherche comptes par mail
 write-host "------------- Comptes par mail"
@@ -28,7 +39,6 @@ $comptes = $zimbra.getAccountsByMail("*@zimbra.gosnet.fr",$attributs)
 foreach($compte in $comptes){
     write-host ($compte)
 }
-
 
 # Recherche comptes par Société
 write-host "------------- Comptes par société"
@@ -79,7 +89,7 @@ if($result){
     write-host "Alias NON créé !"
 }
 
-# Recherche comptes dans lRecherche dans GAL"
+# Recherche comptes dans dans la GAL"
 $attributs = @("fullname","email")
 $comptes = $zimbra.getAccountsInGal("gosnet","zimbra.gosnet.fr",$attributs)
 foreach($compte in $comptes){
