@@ -1,6 +1,6 @@
 ﻿###############################################################
 ## PowerShell Zimbra Administration
-## Version 0.1 - 10/02/2019
+## Version 0.1 - 11/02/2019
 ##
 ## Classe ZimbraAdmin permettant des appels SOAP aux API
 ## d'administration de Zimbra.
@@ -177,6 +177,12 @@ hidden [String] $token = $null
     }
 
 ###############################################################
+###############################################################
+# Méthodes liées aux comptes
+###############################################################
+###############################################################
+
+###############################################################
 # Méthode countAccountsByCos()
 #  Compte le nombre de comptes par COS
 #  Paramètres:
@@ -216,12 +222,6 @@ hidden [String] $token = $null
             return $False
         }
     }
-
-###############################################################
-###############################################################
-# Méthodes liées aux comptes
-###############################################################
-###############################################################
 
 ###############################################################
 # Méthode getAccountsLocked()
@@ -365,6 +365,84 @@ hidden [String] $token = $null
     }
 
 ###############################################################
+# Méthode renameAccount()
+#  Renomme un compte
+#  Paramètres:
+#   - id : Id du compte
+#   - new : Nouveau nom du compte
+#  Retourne True ou False si échec
+    [Object]renameAccount([String]$id, [String]$new){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:RenameAccountRequest id=`"$id`" newName=`"$new`"/></soapenv:Body>"
+        $response = $this.request($request)
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            if($response.Envelope.Body.RenameAccountResponse.account.id -eq $id){
+                return $true
+            }else{
+                return $False
+            }
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode modifyAccount()
+#  Modifiie les attributs d'un compte
+#  Paramètres:
+#   - id : Id du compte
+#   - attributs : tableau associatif des attributs à modifier
+#  Retourne True ou False si échec
+    [Object]modifyAccount([String]$id, $attributs){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:ModifyAccountRequest id=`"$id`">"
+        Foreach($key in ($attributs.keys)){
+            $request += "<urn1:a n=`"$key`">"+$attributs[$key]+"</urn1:a>"
+        }        
+        $request += "</urn1:ModifyAccountRequest></soapenv:Body>"
+        $response = $this.request($request)
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            if($response.Envelope.Body.ModifyAccountResponse.account.id -eq $id){
+                return $true
+            }else{
+                return $False
+            }
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode deleteAccount()
+#  Supprime un compte
+#  Paramètres:
+#   - id : Id du compte
+#  Retourne True ou False si échec
+    [Object]deleteAccount([String]$id){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:DeleteAccountRequest id=`"$id`"/></soapenv:Body>"
+        $response = $this.request($request)
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            if($response.Envelope.Body.DeleteAccountResponse){
+                return $true
+            }else{
+                return $False
+            }
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+###############################################################
+# Méthodes liées aux alias de comptes
+###############################################################
+###############################################################
+
+###############################################################
 # Méthode addAccountAlias()
 #  Ajoute un alais à un compte
 #  Paramètres:
@@ -378,6 +456,29 @@ hidden [String] $token = $null
         # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
         if(($response.response) -ne "Error"){
             if($response.Envelope.Body.AddAccountAliasResponse.xmlns){
+                return $true
+            }else{
+                return $False
+            }
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode removeAccountAlias()
+#  Supprime un alais à un compte
+#  Paramètres:
+#   - id : Id du compte
+#   - alais : Alias du compte à supprimer
+#  Retourne True ou False si échec
+    [Object]removeAccountAlias([String]$id, [String]$alias){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:RemoveAccountAliasRequest id=`"$id`" alias=`"$alias`"/></soapenv:Body>"
+        $response = $this.request($request)
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            if($response.Envelope.Body.RemoveAccountAliasResponse.xmlns){
                 return $true
             }else{
                 return $False
