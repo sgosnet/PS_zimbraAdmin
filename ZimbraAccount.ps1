@@ -170,32 +170,48 @@ hidden [String] $token = $null
 
 ###############################################################
 # Méthode getAccountSignatures()
-#  Renvoie la signature d'un compte
+#  Renvoie les signatures d'un compte
+#  Paramètres:
+#   - name : nom du compte
+#  Retourne un tableau associatif des signatures (id, name, content)
+    [Object]getAccountSignatures([String]$compte){
+        # Construction Requête SOAP
+        $context = "<urn:account by=`"name`">$compte</urn:account>"
+        $request = "<soapenv:Body><urn1:GetSignaturesRequest/>"
+        $request += "</soapenv:Body>"
+        $response = $this.request($context,$request)
+        # Test de la réponse SOAP et renvoie d'un tableau des signatures
+        if(($response.response) -ne "Error"){
+            $signatures = $response.Envelope.Body.GetSignaturesResponse
+            ([String]$signatures)
+            $reponse = @()
+            foreach($signature in $signatures.signature){
+                $reponse += @{"id"=$signature.id;"name"=$signature.name;"type"=$signature.content.type;"content"=$signature.content.'#text'}
+            }
+            return $reponse
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode searchAccountSignature()
+#  Cherche la signature d'un compte
 #  Paramètres:
 #   - name : nom du compte
 #   - signName : nom de la signature
 #  Retourne un tableau associatif de la signature (id, name, content)
-    [Object]getAccountSignature([String]$name, [String]$signName){
-        # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$name</urn:account>"
-        $request = "<soapenv:Body><urn1:GetSignaturesRequest name=`"$signName`"/>"
-        $request += "</soapenv:Body>"
-        $response = $this.request($context,$request)
-
-##
-## Retourne toutes les signatures !!!
-##
-
-        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
-        if(($response.response) -ne "Error"){
-            if($response.Envelope.Body.GetSignaturesResponse.signature.name -eq $signName){
-                return @{"id"=$response.Envelope.Body.GetSignaturesResponse.signature.id;"name"=$response.Envelope.Body.GetSignaturesResponse.signature.name;"content"=$response.Envelope.Body.GetSignaturesResponse.signature.content.'#text'}
-            }else{
-                return $False
+    [Object]searchAccountSignature([String]$compte,[String]$signName){
+        # Appel méthode getAccountSignature
+        $signatures = $this.getAccountSignatures($compte)
+        if($signatures -ne $False){
+            ForEach($signature in $signatures){
+                if($signature.name -eq $signName){
+                    return @{"id"=$signature.id;"name"=$signature.name;"type"=$signature.type;"content"=$signature.content}
+                }
             }
-        }else{
-            return $False
         }
+        return $False
     }
 
 ###############################################################
@@ -249,4 +265,27 @@ hidden [String] $token = $null
             return $False
         }
     }
+
+###############################################################
+# Méthode deleteAccountSignature()
+#  Supprime une signature du compte
+#  Paramètres:
+#   - name : nom du compte
+#   - signName : nom de la signature à supprimer
+#  Retourne $True ou $False si échec
+    [Object]deleteAccountSignature([String]$name, [String]$signId){
+        # Construction Requête SOAP
+        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $request = "<soapenv:Body><urn1:DeleteSignatureRequest>"
+        $request += "<urn1:signature id=`"$signId`"/>"        $request += "</urn1:DeleteSignatureRequest></soapenv:Body>"
+        $response = $this.request($context,$request)
+
+        # Test de la réponse SOAP et renvoie id de la signature ou False si erreur
+        if(($response.response) -ne "Error"){
+            return $True
+        }else{
+            return $False
+        }
+    }
+
 }
