@@ -35,6 +35,9 @@ hidden [String] $soapHeader2 = '</urn:Context></soapenv:Header>'
 hidden [String] $soapFoot = '</soapenv:Envelope>'
 hidden [String] $urlSoap = $null
 hidden [String] $token = $null
+hidden [String] $loginName = $null
+hidden [String] $loginToken = $null
+
 
     [String] $url
     [Int] $port = 8443
@@ -145,6 +148,9 @@ hidden [String] $token = $null
 
         # Enregistrement du Token et ajout dans l'entête SOAP
         if(($response.response) -ne "Error"){
+            $this.loginName = $login
+            $this.name = $login
+            $this.loginToken = $response.Envelope.Body.Authresponse.authToken
             $this.token = $response.Envelope.Body.Authresponse.authToken
             $this.soapHeader1 = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:zimbra" xmlns:urn1="urn:zimbraAccount"><soapenv:Header><urn:context><urn:authToken>'+($this.token)+'</urn:authToken>'
             $this.soapHeader2 = '</urn:context></soapenv:Header>'
@@ -155,15 +161,30 @@ hidden [String] $token = $null
     }
 
 ###############################################################
-# Méthode setAccount()
-#  Ouvre une session Admin Zimbra avec un appel SOAP Auth-user
-#  Initie une token Zimbra
+# Méthode delegateAuthAccount()
+#  Délègue une authentification sur un compte 
+#  Initie un delegated token Zimbra sur un compte
 #  Paramètres :
 #   - $name : Nom du compte
-    [Boolean] setAccount([String]$name){
+    [Boolean] delegateAuthAccount([String]$name,[String]$delegatedToken){
         $this.name = $name
+        $this.token = $delegatedToken
+        $this.soapHeader1 = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:zimbra" xmlns:urn1="urn:zimbraAccount"><soapenv:Header><urn:context><urn:authToken>'+($this.token)+'</urn:authToken>'
+        $this.soapHeader2 = '</urn:context></soapenv:Header>'
         return $True
     }
+
+###############################################################
+# Méthode releaseDelegateAuthAccount()
+#  Libère la délèguation d'authentification sur un compte 
+    [Boolean] releaseDelegateAuthAccount(){
+        $this.name = $this.loginName
+        $this.token = $this.loginToken
+        $this.soapHeader1 = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:zimbra" xmlns:urn1="urn:zimbraAccount"><soapenv:Header><urn:context><urn:authToken>'+($this.token)+'</urn:authToken>'
+        $this.soapHeader2 = '</urn:context></soapenv:Header>'
+        return $True
+    }
+
 
 ###############################################################
 # Méthode close()

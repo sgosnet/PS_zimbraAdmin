@@ -1,6 +1,6 @@
 ﻿###############################################################
 ## PowerShell Zimbra Administration
-## Version 0.1 - 11/02/2019
+## Version 0.1 - 05/06/2019
 ##
 ## Classe ZimbraAdmin permettant des appels SOAP aux API
 ## d'administration de Zimbra.
@@ -63,7 +63,6 @@ hidden [String] $token = $null
         
         # Construction de la requete SOAP avec entête et Pied XML
         $request = [xml](($this.soapHeader)+$soap+($this.soapFoot))
-
         # Appel WebService avec ou sans prise en compte des erreurs de certificat (Support avec Powershell 6.1)
         try{
             if($this.ignoreCertificateError){
@@ -160,6 +159,27 @@ hidden [String] $token = $null
     }
 
 ###############################################################
+# Méthode delegateAuth()
+#  Ouvre une session Admin déléguée Zimbra pour un compte
+#  Initie un delegated token Zimbra
+#  Paramètres :
+#   - name : Compte délégué
+#  Retourne Delegated Token ou $False si Erreur
+    [String] delegateAuth([String]$name,[Int]$duration){
+
+        # Requête SOAP d'Authentification
+        $request = "<soapenv:Body><urn1:DelegateAuthRequest duration=`"$duration`"><urn1:account by=`"name`">$name</urn1:account></urn1:DelegateAuthRequest></soapenv:Body>"
+        $response = $this.request($request)
+
+        # Enregistrement du Token et ajout dans l'entête SOAP
+        if(($response.response) -ne "Error"){
+            return [String]($response.Envelope.Body.DelegateAuthResponse.authToken)
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
 # Méthode checkHealth()
 #  Vérifie l'état de santé de Zimbra
 #  Retourne 1 (OK) ou 0 (NOK) selon l'état de santé
@@ -239,6 +259,25 @@ hidden [String] $token = $null
         if(($response.response) -ne "Error"){
             $comptes = $response.Envelope.Body.SearchAccountsResponse.account
             return $this.xmlToObjects($comptes,("name","id"),$attributs)
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode getAccountId()
+#  Recherche l'Id d'un compte
+#  Paramètres:
+#   - name : compte Zimbra
+#  Retourne l'Id du compte ou False si échec
+    [Object]getAccountId([String] $name){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:SearchAccountsRequest query=`"(mail=$name)`"/></soapenv:Body>"
+        $response = $this.request($request)
+
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            return $response.Envelope.Body.SearchAccountsResponse.account.id
         }else{
             return $False
         }
@@ -325,6 +364,26 @@ hidden [String] $token = $null
         if(($response.response) -ne "Error"){
             $comptes = $response.Envelope.Body.AutoCompleteGalResponse.cn
             return $this.xmlToObjects($comptes,("ref","id"),$attributs)
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode getAccountsMbxSize()
+#  Renvoie la taille de la BAL d'un compte
+#  Paramètres:
+#   - id : Filtre sur l'Id du compte
+#   - attributs : Liste des attributs à extraire
+#  Retourne Tableau d'objet contenant les comptes
+    [Object]getAccountMbxSize([String] $id){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:GetMailboxRequest><urn1:mbox id=`"$id`"/></urn1:GetMailboxRequest></soapenv:Body>"
+        $response = $this.request($request)
+
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            return $comptes = $response.Envelope.Body.GetMailboxResponse.mbox.s
         }else{
             return $False
         }
@@ -441,6 +500,35 @@ hidden [String] $token = $null
 # Méthodes liées aux alias de comptes
 ###############################################################
 ###############################################################
+
+###############################################################
+# Méthode getAccountAlias()
+#  Revnoie les alias d'un compte
+#  Paramètres:
+#   - id : Id du compte
+#  Retourne un tableau des alias ou False si échec
+    [Object]getAccountAlias([String]$id){
+        # Construction Requête SOAP
+        $request = "<soapenv:Body><urn1:GetAccountRequest attrs=`"zimbraMailAlias`">"
+        $request += "<urn1:account by=`"id`">$id</urn1:account>"
+        $request += "</urn1:GetAccountRequest></soapenv:Body>"
+        $response = $this.request($request)
+
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            if($response.Envelope.Body.getAccountResponse.account.id -eq $id){
+                $alias = @()
+                ForEach($a in $response.Envelope.Body.getAccountResponse.account.a){
+                    $alias += $a.'#text'
+                }
+                return $alias
+            }else{
+                return $False
+            }
+        }else{
+            return $False
+        }
+    }
 
 ###############################################################
 # Méthode addAccountAlias()
