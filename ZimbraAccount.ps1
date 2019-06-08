@@ -39,6 +39,7 @@ hidden [String] $token = $null
     [String] $url
     [Int] $port = 8443
     [Boolean] $ignoreCertificateError
+    [String] $name =""
 
     ZimbraAccount([String]$url,[Int]$port,[Switch]$ignoreCertificateError){
 
@@ -154,6 +155,17 @@ hidden [String] $token = $null
     }
 
 ###############################################################
+# Méthode setAccount()
+#  Ouvre une session Admin Zimbra avec un appel SOAP Auth-user
+#  Initie une token Zimbra
+#  Paramètres :
+#   - $name : Nom du compte
+    [Boolean] setAccount([String]$name){
+        $this.name = $name
+        return $True
+    }
+
+###############################################################
 # Méthode close()
 #  Ferme la session Admin Zimbra avec un appel SOAP Auth-user
 #  Supprime le token Zimbra
@@ -162,6 +174,9 @@ hidden [String] $token = $null
         $this.token = $null
         return $true
     }
+
+
+
 
 ###############################################################
 ###############################################################
@@ -172,12 +187,11 @@ hidden [String] $token = $null
 ###############################################################
 # Méthode getAccountSignatures()
 #  Renvoie les signatures d'un compte
-#  Paramètres:
-#   - name : nom du compte
+#  Paramètres: aucun
 #  Retourne un tableau associatif des signatures (id, name, content)
-    [Object]getAccountSignatures([String]$compte){
+    [Object]getAccountSignatures(){
         # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$compte</urn:account>"
+        $context = "<urn:account by=`"name`">"+($this.name)+"</urn:account>"
         $request = "<soapenv:Body><urn1:GetSignaturesRequest/>"
         $request += "</soapenv:Body>"
         $response = $this.request($context,$request)
@@ -199,12 +213,11 @@ hidden [String] $token = $null
 # Méthode searchAccountSignature()
 #  Cherche la signature d'un compte
 #  Paramètres:
-#   - name : nom du compte
 #   - signName : nom de la signature
 #  Retourne un tableau associatif de la signature (id, name, content)
-    [Object]searchAccountSignature([String]$compte,[String]$signName){
+    [Object]searchAccountSignature([String]$signName){
         # Appel méthode getAccountSignature
-        $signatures = $this.getAccountSignatures($compte)
+        $signatures = $this.getAccountSignatures()
         if($signatures -ne $False){
             ForEach($signature in $signatures){
                 if($signature.name -eq $signName){
@@ -219,14 +232,13 @@ hidden [String] $token = $null
 # Méthode createAccountSignature()
 #  Ajoute une nouvelle signature au compte
 #  Paramètres:
-#   - name : nom du compte
 #   - signName : nom de la nouvelle signature
 #   - signType : type de la nouvelle signature (text/html)
 #   - signContent : contenu de la nouvelle signature
 #  Retourne l'Id de la nouvelle signature ou False si échec
-    [Object]createAccountSignature([String]$name, [String]$signName, [String]$signType, [String]$signContent){
+    [Object]createAccountSignature([String]$signName, [String]$signType, [String]$signContent){
         # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $context = "<urn:account by=`"name`">"+($this.name)+"</urn:account>"
         $request = "<soapenv:Body><urn1:CreateSignatureRequest>"
         $request += "<urn1:signature name=`"$signName`">"        if($signType -eq "text/html"){            $request += "<urn1:content type=`"$signType`"><![CDATA[$signContent]]></urn1:content>"}        if($signType -eq "text/plain"){            $request += "<urn1:content type=`"$signType`">$signContent</urn1:content>"}        $request += "</urn1:signature></urn1:CreateSignatureRequest></soapenv:Body>"
         $response = $this.request($context,$request)
@@ -247,14 +259,13 @@ hidden [String] $token = $null
 # Méthode modifyAccountSignature()
 #  Modifie une signature du compte
 #  Paramètres:
-#   - name : nom du compte
 #   - signName : nom de la nouvelle signature
 #   - signType : type de la nouvelle signature (text/html)
 #   - signContent : contenu de la nouvelle signature
 #  Retourne l'Id de la nouvelle signature ou False si échec
-    [Object]modifyAccountSignature([String]$name, [String]$signId, [String]$signType, [String]$signContent){
+    [Object]modifyAccountSignature([String]$signId, [String]$signType, [String]$signContent){
         # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $context = "<urn:account by=`"name`">"+($this.name)+"</urn:account>"
         $request = "<soapenv:Body><urn1:ModifySignatureRequest>"
         $request += "<urn1:signature id=`"$signId`">"        $request += "<urn1:content type=`"$signType`"><![CDATA[$signContent]]></urn1:content>"        $request += "</urn1:signature></urn1:ModifySignatureRequest></soapenv:Body>"
         $response = $this.request($context,$request)
@@ -271,12 +282,11 @@ hidden [String] $token = $null
 # Méthode deleteAccountSignature()
 #  Supprime une signature du compte
 #  Paramètres:
-#   - name : nom du compte
 #   - signName : nom de la signature à supprimer
 #  Retourne $True ou $False si échec
-    [Object]deleteAccountSignature([String]$name, [String]$signId){
+    [Object]deleteAccountSignature([String]$signId){
         # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $context = "<urn:account by=`"name`">"+($this.name)+"</urn:account>"
         $request = "<soapenv:Body><urn1:DeleteSignatureRequest>"
         $request += "<urn1:signature id=`"$signId`"/>"        $request += "</urn1:DeleteSignatureRequest></soapenv:Body>"
         $response = $this.request($context,$request)
@@ -293,11 +303,11 @@ hidden [String] $token = $null
 # Méthode getAccountIdentities()
 #  Liste les identités du compte
 #  Paramètres:
-#   - attributs : Liste des attributs à extraire
+#   - attributs : Liste des attributs des identités à extraire
 #  Retourne Tableau d'objet contenant les comptes
-    [Object]getAccountIdentities([String]$compte, [String[]] $attributs){
+    [Object]getAccountIdentities([String[]] $attributs){
         # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$compte</urn:account>"
+        $context = "<urn:account by=`"name`">"+($this.name)+"</urn:account>"
         $request = "<soapenv:Body><urn1:GetIdentitiesRequest />"
         $request += "</soapenv:Body>"
         $response = $this.request($context,$request)
@@ -315,13 +325,12 @@ hidden [String] $token = $null
 # Méthode setAccountSignatureDefault()
 #  Modifie la signature par défaut du compte
 #  Paramètres:
-#   - name : nom du compte
 #   - identId : id de l'identité cible
 #   - signId : id de la signature
 #  Retourne $True ou False si échec
-    [Object]setAccountSignatureDefault([String]$name, [String]$identId, [String]$signId){
+    [Object]setAccountSignatureDefault([String]$identId, [String]$signId){
         # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $context = "<urn:account by=`"name`">"+($this.name)+"</urn:account>"
         $request = "<soapenv:Body><urn1:ModifyIdentityRequest>"
         $request += "<urn1:identity id=`"$identId`">"        $request += "<a name=`"zimbraPrefDefaultSignatureId`">$signId</a>"        $request += "</urn1:identity></urn1:ModifyIdentityRequest></soapenv:Body>"
         $response = $this.request($context,$request)
@@ -338,13 +347,12 @@ hidden [String] $token = $null
 # Méthode setAccountSignatureReply()
 #  Modifie la signature de retour du compte
 #  Paramètres:
-#   - name : nom du compte
 #   - identId : id de l'identité cible
 #   - signId : id de la signature
 #  Retourne $True ou False si échec
-    [Object]setAccountSignatureReply([String]$name, [String]$identId, [String]$signId){
+    [Object]setAccountSignatureReply([String]$identId, [String]$signId){
         # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $context = "<urn:account by=`"name`">"+($this.name)+"</urn:account>"
         $request = "<soapenv:Body><urn1:ModifyIdentityRequest>"
         $request += "<urn1:identity id=`"$identId`">"        $request += "<a name=`"zimbraPrefForwardReplySignatureId`">$signId</a>"        $request += "</urn1:identity></urn1:ModifyIdentityRequest></soapenv:Body>"
         $response = $this.request($context,$request)
@@ -361,13 +369,12 @@ hidden [String] $token = $null
 # Méthode removeAccountSignatureDefault()
 #  Supprime la signature par défaut du compte
 #  Paramètres:
-#   - name : nom du compte
 #   - identId : id de l'identité cible
 #  Retourne $True ou False si échec
-    [Object]removeAccountSignatureDefault([String]$name, [String]$identId){
+    [Object]removeAccountSignatureDefault([String]$identId){
         $signId = "11111111-1111-1111-1111-111111111111"
         # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $context = "<urn:account by=`"name`">"+($this.name)+"</urn:account>"
         $request = "<soapenv:Body><urn1:ModifyIdentityRequest>"
         $request += "<urn1:identity id=`"$identId`">"        $request += "<a name=`"zimbraPrefDefaultSignatureId`">$signId</a>"        $request += "</urn1:identity></urn1:ModifyIdentityRequest></soapenv:Body>"
         $response = $this.request($context,$request)
@@ -384,13 +391,12 @@ hidden [String] $token = $null
 # Méthode removeAccountSignatureReply()
 #  Supprime la signature de retour du compte
 #  Paramètres:
-#   - name : nom du compte
 #   - identId : id de l'identité cible
 #  Retourne $True ou False si échec
-    [Object]removeAccountSignatureReply([String]$name, [String]$identId){
+    [Object]removeAccountSignatureReply([String]$identId){
         $signId = "11111111-1111-1111-1111-111111111111"
         # Construction Requête SOAP
-        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $context = "<urn:account by=`"name`">"+($this.name)+"</urn:account>"
         $request = "<soapenv:Body><urn1:ModifyIdentityRequest>"
         $request += "<urn1:identity id=`"$identId`">"        $request += "<a name=`"zimbraPrefForwardReplySignatureId`">$signId</a>"        $request += "</urn1:identity></urn1:ModifyIdentityRequest></soapenv:Body>"
         $response = $this.request($context,$request)
