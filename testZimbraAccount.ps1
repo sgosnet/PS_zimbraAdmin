@@ -21,6 +21,39 @@ if(-not($zimbra.open("admin@zimbra.gosnet.fr","zimbra"))){
     Write-host "Erreur d'authentification !!"
 }
 
+# Template signature
+$template = "<div>
+<p style=`"margin: 0px;`"><span style=`"font-size: 10pt; font-family: 'calibri', 'sans-serif'; color: #c7373b;`">____________________________________________________________________________________</span></p>
+<p style=`"margin: 0px;`"><span style=`"font-size: 10pt; font-family: 'trebuchet ms', sans-serif;`"><strong><span style=`"color: #c7373b;`">Pr&eacute;nom NOM<br /></span></strong></span></p>
+<p style=`"margin: 0px;`"><span style=`"color: #999999;`"><strong><em><span style=`"font-size: 7.5pt; font-family: 'arial', 'sans-serif';`">Pour le respect de l'environnement, merci de n'imprimer ce mail qu'en cas de n&eacute;cessit&eacute;.</span></em></strong></span></p>
+</div>"
+
+# Ajoute une signature Html au compte
+write-host "------------- Ajout Signature Template HTML"
+$id_template = $zimbra.createAccountSignature("admin@zimbra.gosnet.fr","Template Html","text/html",$template)
+Write-host $id_template
+
+# Recherche signature d'un compte
+write-host "------------- Recherche Signature"
+$signature = $zimbra.searchAccountSignature("admin@zimbra.gosnet.fr","Template Html")
+write-host $signature.name ($signature.id) "type" $signature.type 
+
+# Ajoute une signature text au compte
+write-host "------------- Ajout Signature TXT"
+$id_txt = $zimbra.createAccountSignature("admin@zimbra.gosnet.fr","Signature TXT","text/plain","Cordialement")
+Write-host $id_txt
+
+# Ajoute une signature Html au compte
+write-host "------------- Ajout Signature HTML"
+$id_html = $zimbra.createAccountSignature("admin@zimbra.gosnet.fr","Signature Html","text/html",$template)
+Write-host $id_html
+
+# Modifie une signature au compte
+write-host "------------- Modifie Signature"
+$signNew = $template.replace("Pr&eacute;nom NOM","Stephane GOSNET")
+$result = $zimbra.modifyAccountSignature("admin@zimbra.gosnet.fr",$id_html,"text/html",$signNew)
+Write-host $result
+
 # Liste signatures d'un compte
 write-host "------------- Liste Signatures"
 $signatures = $zimbra.getAccountSignatures("admin@zimbra.gosnet.fr")
@@ -28,33 +61,39 @@ foreach($signature in $signatures){
     Write-host $signature.name ($signature.id)
 }
 
-# Recherche signature d'un compte
-write-host "------------- Recherche Signature"
-$signature = $zimbra.searchAccountSignature("admin@zimbra.gosnet.fr","Le Mans 2019")
-write-host $signature.name ($signature.id) "type" $signature.type 
-
-# Ajoute une signature text au compte
-write-host "------------- Ajout Signature TXT"
-$id = $zimbra.createAccountSignature("admin@zimbra.gosnet.fr","Le Mans TXT","text/plain","Cordialement")
-Write-host $id
-
-# Ajoute une signature Html au compte
-write-host "------------- Ajout Signature HTML"
-$id = $zimbra.createAccountSignature("admin@zimbra.gosnet.fr","Le Mans 2020","text/html",$signature.content)
-Write-host $id
-
-# Modifie une signature au compte
-write-host "------------- Modifie Signature"
-$signNew = $signature.content.replace("Pr&eacute;nom NOM","Stephane GOSNET")
-$result = $zimbra.modifyAccountSignature("admin@zimbra.gosnet.fr",$id,"text/html",$signNew)
+# Supprime la signature TXT du compte
+write-host "------------- Supprime Signature TXT"
+$result = $zimbra.deleteAccountSignature("admin@zimbra.gosnet.fr",$id_txt)
 Write-host $result
 
-# Supprime une signature au compte
-write-host "------------- Supprime Signature"
-$result = $zimbra.deleteAccountSignature("admin@zimbra.gosnet.fr","5e312f57-6f4e-430e-bcff-bee309d1c1cc")
-Write-host $result
+# Signature Html par défaut
+write-host "------------- Signature par défaut"
+write-host "------------------ Avant : Template défaut"
+$attributs = @("zimbraPrefDefaultSignatureId","zimbraPrefForwardReplySignatureId")
+$identites = $zimbra.getAccountIdentities("admin@zimbra.gosnet.fr", $attributs)
+write-host $identites
 
+$zimbra.setAccountSignatureDefault("admin@zimbra.gosnet.fr", $identites[0].id, $id_html)
+$zimbra.setAccountSignatureReply("admin@zimbra.gosnet.fr", $identites[0].id, $id_html)
 
+write-host "------------------ Après : Signature Html par défaut sur nouveau mail et réponse"
+$attributs = @("zimbraPrefDefaultSignatureId","zimbraPrefForwardReplySignatureId")
+$identites = $zimbra.getAccountIdentities("admin@zimbra.gosnet.fr", $attributs)
+write-host $identites
+
+# Suppression Signature Reply
+write-host "------------- Suppresion de la signature Reply"
+write-host "------------------ Avant : Html"
+$attributs = @("zimbraPrefDefaultSignatureId","zimbraPrefForwardReplySignatureId")
+$identites = $zimbra.getAccountIdentities("admin@zimbra.gosnet.fr", $attributs)
+write-host $identites
+
+$zimbra.removeAccountSignatureReply("admin@zimbra.gosnet.fr", $identites[0].id)
+
+write-host "------------------ Après : Sans signature"
+$attributs = @("zimbraPrefDefaultSignatureId","zimbraPrefForwardReplySignatureId")
+$identites = $zimbra.getAccountIdentities("admin@zimbra.gosnet.fr", $attributs)
+write-host $identites
 
 # Fermeture session
 echo "---------- Fermeture session ---------------------"

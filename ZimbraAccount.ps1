@@ -99,16 +99,17 @@ hidden [String] $token = $null
             # Comptage pour chaque attributs
             foreach($ligne in $result.a){
                 foreach($attribut in $attributs){
-                    if($ligne.n -eq $attribut){
+                    if($ligne.name -eq $attribut){
                         $attrCnt[$attribut] += 1
                     }
                 }
             }
+
             # Traitement des attributs
             $attrMulti=@{}
             foreach($ligne in $result.a){
                 foreach($attribut in $attributs){
-                    if($ligne.n -eq $attribut){
+                    if($ligne.name -eq $attribut){
                         if($attrCnt[$attribut] -eq 1){
                             $objet | Add-member -Name $attribut -MemberType NoteProperty -Value ($ligne.'#text')
                         }else{
@@ -281,6 +282,120 @@ hidden [String] $token = $null
         $response = $this.request($context,$request)
 
         # Test de la réponse SOAP et renvoie id de la signature ou False si erreur
+        if(($response.response) -ne "Error"){
+            return $True
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode getAccountIdentities()
+#  Liste les identités du compte
+#  Paramètres:
+#   - attributs : Liste des attributs à extraire
+#  Retourne Tableau d'objet contenant les comptes
+    [Object]getAccountIdentities([String]$compte, [String[]] $attributs){
+        # Construction Requête SOAP
+        $context = "<urn:account by=`"name`">$compte</urn:account>"
+        $request = "<soapenv:Body><urn1:GetIdentitiesRequest />"
+        $request += "</soapenv:Body>"
+        $response = $this.request($context,$request)
+
+        # Test de la réponse SOAP et renvoie résultat XML ou False si erreur
+        if(($response.response) -ne "Error"){
+            $identites = $response.Envelope.Body.GetIdentitiesResponse.identity
+            return $this.xmlToObjects($identites,("name","id"),$attributs)
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode setAccountSignatureDefault()
+#  Modifie la signature par défaut du compte
+#  Paramètres:
+#   - name : nom du compte
+#   - identId : id de l'identité cible
+#   - signId : id de la signature
+#  Retourne $True ou False si échec
+    [Object]setAccountSignatureDefault([String]$name, [String]$identId, [String]$signId){
+        # Construction Requête SOAP
+        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $request = "<soapenv:Body><urn1:ModifyIdentityRequest>"
+        $request += "<urn1:identity id=`"$identId`">"        $request += "<a name=`"zimbraPrefDefaultSignatureId`">$signId</a>"        $request += "</urn1:identity></urn1:ModifyIdentityRequest></soapenv:Body>"
+        $response = $this.request($context,$request)
+
+        # Test de la réponse SOAP et renvoie $True ou $False si erreur
+        if(($response.response) -ne "Error"){
+            return $True
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode setAccountSignatureReply()
+#  Modifie la signature de retour du compte
+#  Paramètres:
+#   - name : nom du compte
+#   - identId : id de l'identité cible
+#   - signId : id de la signature
+#  Retourne $True ou False si échec
+    [Object]setAccountSignatureReply([String]$name, [String]$identId, [String]$signId){
+        # Construction Requête SOAP
+        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $request = "<soapenv:Body><urn1:ModifyIdentityRequest>"
+        $request += "<urn1:identity id=`"$identId`">"        $request += "<a name=`"zimbraPrefForwardReplySignatureId`">$signId</a>"        $request += "</urn1:identity></urn1:ModifyIdentityRequest></soapenv:Body>"
+        $response = $this.request($context,$request)
+
+        # Test de la réponse SOAP et renvoie $True ou $False si erreur
+        if(($response.response) -ne "Error"){
+            return $True
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode removeAccountSignatureDefault()
+#  Supprime la signature par défaut du compte
+#  Paramètres:
+#   - name : nom du compte
+#   - identId : id de l'identité cible
+#  Retourne $True ou False si échec
+    [Object]removeAccountSignatureDefault([String]$name, [String]$identId){
+        $signId = "11111111-1111-1111-1111-111111111111"
+        # Construction Requête SOAP
+        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $request = "<soapenv:Body><urn1:ModifyIdentityRequest>"
+        $request += "<urn1:identity id=`"$identId`">"        $request += "<a name=`"zimbraPrefDefaultSignatureId`">$signId</a>"        $request += "</urn1:identity></urn1:ModifyIdentityRequest></soapenv:Body>"
+        $response = $this.request($context,$request)
+
+        # Test de la réponse SOAP et renvoie $True ou $False si erreur
+        if(($response.response) -ne "Error"){
+            return $True
+        }else{
+            return $False
+        }
+    }
+
+###############################################################
+# Méthode removeAccountSignatureReply()
+#  Supprime la signature de retour du compte
+#  Paramètres:
+#   - name : nom du compte
+#   - identId : id de l'identité cible
+#  Retourne $True ou False si échec
+    [Object]removeAccountSignatureReply([String]$name, [String]$identId){
+        $signId = "11111111-1111-1111-1111-111111111111"
+        # Construction Requête SOAP
+        $context = "<urn:account by=`"name`">$name</urn:account>"
+        $request = "<soapenv:Body><urn1:ModifyIdentityRequest>"
+        $request += "<urn1:identity id=`"$identId`">"        $request += "<a name=`"zimbraPrefForwardReplySignatureId`">$signId</a>"        $request += "</urn1:identity></urn1:ModifyIdentityRequest></soapenv:Body>"
+        $response = $this.request($context,$request)
+
+        # Test de la réponse SOAP et renvoie $True ou $False si erreur
         if(($response.response) -ne "Error"){
             return $True
         }else{
